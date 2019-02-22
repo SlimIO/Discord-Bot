@@ -1,22 +1,18 @@
 {
-    "embeds": [
-        {
-            "author": {
-                "icon_url": "",
-                "name": "author name",
-                "url": ""
-            },
-            "color": 16185594,
-            "title": "",
-            "url": "",
-            "description": "",
-            "thumbnail": {
-                "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Octicons-mark-github.svg/1200px-Octicons-mark-github.svg.png"
-            },
-            "footer": {
-                "icon_url": "https://cdn0.iconfinder.com/data/icons/octicons/1024/git-branch-512.png",
-                "text": "GitHub"
-            }
-        }
-    ]
+    "author": {
+        "icon_url": "",
+        "name": "",
+        "url": ""
+    },
+    "color": 16185594,
+    "title": "",
+    "url": "",
+    "description": "",
+    "thumbnail": {
+        "url": ""
+    },
+    "footer": {
+        "icon_url": "",
+        "text": ""
+    }
 }

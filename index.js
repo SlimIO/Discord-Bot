@@ -7,20 +7,64 @@ const templateMsg = require("./template/discordMessage.json");
 dotenv.config();
 
 const gitWebHook = new Discord.WebhookClient(process.env.GIT_WEBHOOK_ID, process.env.GIT_WEBHOOK_TOKEN);
-const allMessages = [];
 
-function regroupHookInfos(embed) {
-    if (Allmessages.length === 0) {
-        setTimeout(() => regroupHookInfos(allMessages), 5000);
+const contributors = new Map();
+
+function getDesc(commits) { 
+    return commits
+        .reduce((desc, currVal) => `${desc}[${currVal.id.substring(0, 7)}](${currVal.url}) ${currVal.message} \n`, []);
+}
+
+function getEmbed(requestBody, isNewContributor) {
+    const { avatar_url, login, html_url, name, branch, compare, commits } = requestBody;
+    if (!isNewContributor) {
+        const contributor = contributors.get(login);
+        const lastIndx = contributor.embeds.length - 1;        
+        delete contributor.embeds[lastIndx].footer;
+    }
+    const embeds = isNewContributor ? { embeds: [] } : contributors.get(login);
+    const obj = JSON.parse(JSON.stringify(templateMsg));
+
+    const isGreenkeeper = login === "greenkeeper[bot]";
+    const author = {
+        icon_url: avatar_url,
+        name: login,
+        url: html_url
+    };
+    const footer = {
+        icon_url: isGreenkeeper ? "https://avatars0.githubusercontent.com/u/13812225?s=280&v=4"
+            : "https://cdn0.iconfinder.com/data/icons/octicons/1024/git-branch-512.png",
+        text: isGreenkeeper ? "GreenKeeper" : "GitHub"
+    };
+
+    obj.color = isGreenkeeper ? 51061 : 16185594;
+    obj.author = author;
+    obj.title = isGreenkeeper ? "" : `[${name}:${branch}] ${commits.length} commits`;
+    obj.url = compare;
+    obj.description = getDesc(commits);
+    obj.footer = footer;
+    obj.thumbnail.url = isGreenkeeper ? "https://avatars0.githubusercontent.com/u/13812225?s=280&v=4"
+        : "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Octicons-mark-github.svg/1200px-Octicons-mark-github.svg.png";
+
+    embeds.embeds.push(obj);
+
+    return embeds;
+}
+
+function writeOnDiscord() {
+    if (contributors.length === 0) {
+        setTimeout(() => writeOnDiscord(), 10000);
+        console.log("return");
 
         return;
     }
-    // regrouper weebhook les greekeeper et ceux des differents auteurs
-    // si greekeeper formater la description pour greenkeeper
-    // si autre description de tout les post de tous les commits 
-    // quand on send sur discord, reinitialiser allMessages
+
+    contributors.clear();
+    console.log(contributors);
+    setTimeout(() => writeOnDiscord(), 10000);
+    console.log("end");
 }
-regroupHookInfos(allMessages);
+// writeOnDiscord();
 
 const server = polka();
 server.use(bodyParser.urlencoded({ extended: false }))
@@ -29,53 +73,28 @@ server.use(bodyParser.urlencoded({ extended: false }))
         const { sender: {
             avatar_url, login, html_url
         }, repository: {
-            name, default_branch
+            name, default_branch: branch
         }, compare, commits } = req.body;
-        const isGreenkeeper = login === "greenkeeper[bot]";
-        const color = isGreenkeeper ? 51061 : 16185594;
-        const thumbnail = isGreenkeeper ? "https://avatars0.githubusercontent.com/u/13812225?s=280&v=4 "
-            : "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Octicons-mark-github.svg/1200px-Octicons-mark-github.svg.png";
-        const author = {
-            icon_url: avatar_url,
-            name: login,
-            url: html_url
+        const requestBody = {
+            avatar_url,
+            login, html_url,
+            name,
+            branch,
+            compare,
+            commits
         };
-        const repo = { name, default_branch };
-        const msg = { author, repo, color, thumbnail, commits, compare };
-        console.log(msg);
 
-        Allmessages.push(msg);
-        /*
-        templateMsg.embeds[0].author.icon_url = req.body.sender.avatar_url;
-        templateMsg.embeds[0].author.name = req.body.sender.login;
-        templateMsg.embeds[0].author.url = req.body.sender.html_url;
-
-        templateMsg.embeds[0].url = req.body.compare;
-
-        if (req.body.sender.login === "greenkeeper[bot]") {
-            templateMsg.embeds[0].title = `Update`
-
-            templateMsg.embeds[0].thumbnail.url = "https://avatars0.githubusercontent.com/u/13812225?s=280&v=4";
-            templateMsg.embeds[0].footer.icon_url = "https://avatars0.githubusercontent.com/u/13812225?s=280&v=4";
-            templateMsg.embeds[0].footer.text = "GreenKeeper";
-            templateMsg.embeds[0].color = 51061;
+        if (contributors.has(login)) {
+            const embeds = getEmbed(requestBody, false);
+            console.log(JSON.stringify(embeds));
+            // contributors.set(login, embeds);
         }
         else {
-            const repoName = req.body.repository.name;
-            const branch = req.body.ref.split("/").reverse()[0];
-            templateMsg.embeds[0].title = `[${repoName}:${branch}] ${req.body.commits.length} commits`;
-            templateMsg.embeds[0].description = req.body.commits
-                .reduce((desc, currVal) => `${desc}[${currVal.id.substring(0, 7)}](${currVal.url}) ${currVal.message} \n`, []);
-            // eslint-disable-next-line
-            
-            templateMsg.embeds[0].thumbnail.url = "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Octicons-mark-github.svg/1200px-Octicons-mark-github.svg.png";
-            templateMsg.embeds[0].footer.icon_url = "https://cdn0.iconfinder.com/data/icons/octicons/1024/git-branch-512.png";
-            templateMsg.embeds[0].footer.text = "GitHub";
-            templateMsg.embeds[0].color = 16185594;
-            console.log("message envoyer");
-            // gitWebHook.send(templateMsg);
+            const embeds = getEmbed(requestBody, true);
+            contributors.set(login, embeds);
         }
-        */
+
+        console.log("Message enregistre");
     })
     .listen(3000, () => {
         console.log("Server Start in port 3000");
