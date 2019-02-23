@@ -9,23 +9,29 @@ dotenv.config();
 const gitWebHook = new Discord.WebhookClient(process.env.GIT_WEBHOOK_ID, process.env.GIT_WEBHOOK_TOKEN);
 
 const contributors = new Map();
+const gkRepo = new Set();
 
-function getDesc(commits) { 
+function getDesc(commits) {
     return commits
         .reduce((desc, currVal) => `${desc}[${currVal.id.substring(0, 7)}](${currVal.url}) ${currVal.message} \n`, []);
 }
 
+function getGreenKeeperDesc(commits, repoName) {
+    return commits
+        .reduce((desc, currVal) => `${desc}[${currVal.id.substring(0, 7)}](${currVal.url}) ${repoName} \n`, []);
+}
+
 function getEmbed(requestBody, isNewContributor) {
     const { avatar_url, login, html_url, name, branch, compare, commits } = requestBody;
-    if (!isNewContributor) {
+    const isGreenkeeper = login === "greenkeeper[BOT]";
+    if (!isNewContributor && !isGreenkeeper) {
         const contributor = contributors.get(login);
-        const lastIndx = contributor.embeds.length - 1;        
+        const lastIndx = contributor.embeds.length - 1;
         delete contributor.embeds[lastIndx].footer;
     }
     const embeds = isNewContributor ? { embeds: [] } : contributors.get(login);
     const obj = JSON.parse(JSON.stringify(templateMsg));
 
-    const isGreenkeeper = login === "greenkeeper[bot]";
     const author = {
         icon_url: avatar_url,
         name: login,
@@ -39,9 +45,14 @@ function getEmbed(requestBody, isNewContributor) {
 
     obj.color = isGreenkeeper ? 51061 : 16185594;
     obj.author = author;
-    obj.title = isGreenkeeper ? "" : `[${name}:${branch}] ${commits.length} commits`;
-    obj.url = compare;
-    obj.description = getDesc(commits);
+    obj.title = isGreenkeeper ? "Update " : `[${name}:${branch}] ${commits.length} commits`;
+    obj.url = isGreenkeeper ? "" : compare;
+    if (isGreenkeeper && isNewContributor) {
+        obj.description = `**commit message** : ${commits[0].message}\n\n__Liste des package mis a jours__:\n${getGreenKeeperDesc(commits, name)}`;
+    }
+    else {
+        obj.description = isGreenkeeper ? getGreenKeeperDesc(commits, name) : getDesc(commits);
+    }
     obj.footer = footer;
     obj.thumbnail.url = isGreenkeeper ? "https://avatars0.githubusercontent.com/u/13812225?s=280&v=4"
         : "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Octicons-mark-github.svg/1200px-Octicons-mark-github.svg.png";
@@ -59,6 +70,7 @@ function writeOnDiscord() {
         return;
     }
 
+    gkRepo.clear();
     contributors.clear();
     console.log(contributors);
     setTimeout(() => writeOnDiscord(), 10000);
@@ -73,8 +85,9 @@ server.use(bodyParser.urlencoded({ extended: false }))
         const { sender: {
             avatar_url, login, html_url
         }, repository: {
-            name, default_branch: branch
-        }, compare, commits } = req.body;
+            name
+        }, ref, compare, commits } = req.body;
+        const branch = ref.split("/").reverse()[0];
         const requestBody = {
             avatar_url,
             login, html_url,
@@ -83,18 +96,29 @@ server.use(bodyParser.urlencoded({ extended: false }))
             compare,
             commits
         };
-
+        const isGreenkeeper = login === "greenkeeper[BOT]";
+        let embeds = {};
         if (contributors.has(login)) {
-            const embeds = getEmbed(requestBody, false);
-            console.log(JSON.stringify(embeds));
-            // contributors.set(login, embeds);
+            embeds = isGreenkeeper ? contributors.get(login) : getEmbed(requestBody, false);
+            if (isGreenkeeper) {
+                embeds.embeds[0].description += getGreenKeeperDesc(commits, name);
+            }
         }
         else {
-            const embeds = getEmbed(requestBody, true);
-            contributors.set(login, embeds);
+            embeds = getEmbed(requestBody, true);
         }
-
+        if (isGreenkeeper) {
+            gkRepo.add(name);
+            const packageName = commits[0].message.split("update")[1].split("to")[0].trim();
+            embeds.embeds[0].title = `Update ${packageName} in ${gkRepo.size} ${gkRepo.size === 1 ? "repository" : "repositories"}`;
+        }
+        contributors.set(login, embeds);
         console.log("Message enregistre");
+    })
+    .post("/greenKeeper", (req, res) => {
+        console.log("\n");
+        console.log(JSON.stringify(req.body));
+        console.log("\n");
     })
     .listen(3000, () => {
         console.log("Server Start in port 3000");
