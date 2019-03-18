@@ -25,15 +25,15 @@ WEBHOOK_TOKEN=
 ### How to find discord webhook ID and TOKEN
 On discord, go to the server setting.
 
-![discord settings](https://imgur.com/WC0SyTI)
+![discord settings](https://i.imgur.com/WC0SyTI.png)
 
 Choose "Webhooks" on the right and click on `Edit` or create one if you don't have one.
 
-![discord webHook](https://imgur.com/Pj0zAZ2)
+![discord webHook](https://i.imgur.com/Pj0zAZ2.png)
 
 Copy the `webhook url`. The informations are inside this url.
 
-![webHook edit](https://imgur.com/YmDC9IF)
+![webHook edit](https://i.imgur.com/YmDC9IF.png)
 
 directly after *_webhooks/_* you will find your ID and at the end it's your token. copy and past it into your `.env` file
 
