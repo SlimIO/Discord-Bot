@@ -5,6 +5,9 @@
 
 This project allow us to manage discord messages comming from external application to prevent spam (greenkeeper, snyk, trello, drive ...)
 
+## Requirements
+- Node.js v10 or higher
+
 ## Getting Started
 
 This package is available in the Node Package Repository and can be easily installed with [npm](https://docs.npmjs.com/getting-started/what-is-npm) or [yarn](https://yarnpkg.com).
@@ -14,3 +17,31 @@ $ npm i @slimio/discord-bot
 # or
 $ yarn add @slimio/discord-bot
 ```
+After downloading the project. You need to create a `.env` file at the root of the project with two line.
+```
+WEBHOOK_ID=
+WEBHOOK_TOKEN=
+```
+### How to find discord webhook ID and TOKEN
+On discord, go to the server setting.
+
+![discord settings](https://imgur.com/WC0SyTI)
+
+Choose "Webhooks" on the right and click on `Edit` or create one if you don't have one.
+
+![discord webHook](https://imgur.com/Pj0zAZ2)
+
+Copy the `webhook url`. The informations are inside this url.
+
+![webHook edit](https://imgur.com/YmDC9IF)
+
+directly after *_webhooks/_* you will find your ID and at the end it's your token. copy and past it into your `.env` file
+
+> https://*_discordapp_*.com/api/webhooks/`ID`/`TOKEN`
+
+### Run the project
+At the root of the project :
+```bash
+$ npm start
+```
+

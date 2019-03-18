@@ -5,10 +5,13 @@ const bodyParser = require("body-parser");
 const templateMsg = require("./template/discordMessage.json");
 
 // const GreenKeeper = require("./src/greenKeeper.class");
+const GK_ICON = "https://imgur.com/Rk6r0Oo";
+const GIT_ICON = "https://imgur.com/Q2belQu";
+const GIT_ICON_FOOTER = "https://imgur.com/kSGv3fz";
 
 dotenv.config();
 
-const gitWebHook = new Discord.WebhookClient(process.env.GIT_WEBHOOK_ID, process.env.GIT_WEBHOOK_TOKEN);
+const gitWebHook = new Discord.WebhookClient(process.env.WEBHOOK_ID, process.env.WEBHOOK_TOKEN);
 
 const contributors = new Map();
 const listRepoName = new Set();
@@ -40,8 +43,7 @@ function getEmbed(gitWebHookInfos, isNewContributor) {
         url: html_url
     };
     const footer = {
-        icon_url: isGreenkeeper ? "https://avatars0.githubusercontent.com/u/13812225?s=280&v=4"
-            : "https://cdn0.iconfinder.com/data/icons/octicons/1024/git-branch-512.png",
+        icon_url: isGreenkeeper ? GK_ICON : GIT_ICON_FOOTER,
         text: isGreenkeeper ? "GreenKeeper" : "GitHub"
     };
 
@@ -56,17 +58,16 @@ function getEmbed(gitWebHookInfos, isNewContributor) {
         obj.description = isGreenkeeper ? getGreenKeeperDesc(commits, name) : getDesc(commits);
     }
     obj.footer = footer;
-    obj.thumbnail.url = isGreenkeeper ? "https://avatars0.githubusercontent.com/u/13812225?s=280&v=4"
-        : "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Octicons-mark-github.svg/1200px-Octicons-mark-github.svg.png";
+    obj.thumbnail.url = isGreenkeeper ? GK_ICON : GIT_ICON;
 
     embeds.embeds.push(obj);
-    
+
     return embeds;
 }
 
 function writeOnDiscord() {
     if (contributors.length === 0) {
-        setTimeout(() => writeOnDiscord(), 10000);
+        setTimeout(writeOnDiscord, 10000);
         console.log("return");
 
         return;
@@ -77,59 +78,63 @@ function writeOnDiscord() {
     }
     listRepoName.clear();
     contributors.clear();
-    setTimeout(() => writeOnDiscord(), 10000);
+    setTimeout(writeOnDiscord, 10000);
     console.log("end");
 }
 writeOnDiscord();
 
 const server = polka();
-server.use(bodyParser.urlencoded({ extended: false }))
-    .use(bodyParser.json())
-    .post("/gitWebHook", (req, res) => {
-        const { sender: {
-            avatar_url, login, html_url
-        }, repository: {
-            name
-        }, ref, compare, commits } = req.body;
-        const branch = ref.split("/").reverse()[0];
-        const gitWebHookInfos = {
-            avatar_url,
-            login, html_url,
-            name,
-            branch,
-            compare,
-            commits
-        };
-        const isGreenkeeper = login === "greenkeeper[bot]";
-        let embeds = {};
+server.use(bodyParser.urlencoded({ extended: false }));
+server.use(bodyParser.json());
 
-        if (contributors.has(login)) {
-            embeds = isGreenkeeper ? contributors.get(login) : getEmbed(gitWebHookInfos, false);
-            if (isGreenkeeper) {
-                embeds.embeds[0].description += getGreenKeeperDesc(commits, name);
-            }
-        }
-        else {
-            embeds = getEmbed(gitWebHookInfos, true);
-        }
+server.post("/gitWebHook", (req, res) => {
+    const {
+        sender: { avatar_url, login, html_url },
+        repository: { name }, ref, compare, commits
+    } = req.body;
+    const branch = ref.split("/").reverse()[0];
+    const gitWebHookInfos = {
+        avatar_url,
+        login,
+        html_url,
+        name,
+        branch,
+        compare,
+        commits
+    };
+    const isGreenkeeper = login === "greenkeeper[bot]";
+    let embeds = null;
 
+    if (contributors.has(login)) {
+        embeds = isGreenkeeper ? contributors.get(login) : getEmbed(gitWebHookInfos, false);
         if (isGreenkeeper) {
-            listRepoName.add(name);
-            const packageName = commits[0].message.split("update")[1].split("to")[0].trim();
-            embeds.embeds[0].title = `Update ${packageName} in ${listRepoName.size} ${listRepoName.size === 1 ? "repository" : "repositories"}`;
+            embeds.embeds[0].description += getGreenKeeperDesc(commits, name);
         }
+    }
+    else {
+        embeds = getEmbed(gitWebHookInfos, true);
+    }
 
-        // const gkObject = new GreenKeeper(gitWebHookInfos);
-        // gkObject.getEmbed();
+    if (isGreenkeeper) {
+        listRepoName.add(name);
+        const packageName = commits[0].message.split("update")[1].split("to")[0].trim();
+        const plurialRepoNAme = listRepoName.size <= 1 ? "repository" : "repositories";
+        embeds.embeds[0].title = `Update ${packageName} in ${listRepoName.size} ${plurialRepoNAme}`;
+    }
 
-        contributors.set(login, embeds);
-        console.log("Message enregistre");
-    })
-    .post("/greenKeeper", (req, res) => {
-        console.log("\n");
-        console.log(JSON.stringify(req.body));
-        console.log("\n");
-    })
-    .listen(3000, () => {
-        console.log("Server Start in port 3000");
-    });
+    // const gkObject = new GreenKeeper(gitWebHookInfos);
+    // gkObject.getEmbed();
+
+    contributors.set(login, embeds);
+    console.log("Message enregistre");
+});
+
+server.post("/greenKeeper", (req, res) => {
+    console.log("\n");
+    console.log(JSON.stringify(req.body));
+    console.log("\n");
+});
+
+server.listen(3000, () => {
+    console.log("Server Start in port 3000");
+});
