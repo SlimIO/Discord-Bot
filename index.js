@@ -8,6 +8,7 @@ const templateMsg = require("./template/discordMessage.json");
 const GK_ICON = "https://imgur.com/Rk6r0Oo";
 const GIT_ICON = "https://imgur.com/Q2belQu";
 const GIT_ICON_FOOTER = "https://imgur.com/kSGv3fz";
+const TIME = 10000;
 
 dotenv.config();
 
@@ -67,7 +68,7 @@ function getEmbed(gitWebHookInfos, isNewContributor) {
 
 function writeOnDiscord() {
     if (contributors.length === 0) {
-        setTimeout(writeOnDiscord, 10000);
+        setTimeout(writeOnDiscord, TIME);
         console.log("return");
 
         return;
@@ -78,7 +79,7 @@ function writeOnDiscord() {
     }
     listRepoName.clear();
     contributors.clear();
-    setTimeout(writeOnDiscord, 10000);
+    setTimeout(writeOnDiscord, TIME);
     console.log("end");
 }
 writeOnDiscord();
