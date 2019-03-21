@@ -9,39 +9,23 @@ This project allow us to manage discord messages comming from external applicati
 - Node.js v10 or higher
 
 ## Getting Started
-
-This package is available in the Node Package Repository and can be easily installed with [npm](https://docs.npmjs.com/getting-started/what-is-npm) or [yarn](https://yarnpkg.com).
-
+Clone Discord-Bot on your computer
 ```bash
-$ npm i @slimio/discord-bot
-# or
-$ yarn add @slimio/discord-bot
+$ git clone https://github.com/SlimIO/Discord-Bot.git
 ```
-After downloading the project. You need to create a `.env` file at the root of the project with two line.
+After cloning the project, you need to create a `.env` file at the root of the project with two line.
 ```
 WEBHOOK_ID=
 WEBHOOK_TOKEN=
 ```
-### How to find discord webhook ID and TOKEN
-On discord, go to the server setting.
+Don't forget to indicate after `=` the ID and the token of your discord webhook
 
-![discord settings](https://i.imgur.com/WC0SyTI.png)
-
-Choose "Webhooks" on the right and click on `Edit` or create one if you don't have one.
-
-![discord webHook](https://i.imgur.com/Pj0zAZ2.png)
-
-Copy the `webhook url`. The informations are inside this url.
-
-![webHook edit](https://i.imgur.com/YmDC9IF.png)
-
-directly after *_webhooks/_* you will find your ID and at the end it's your token. copy and past it into your `.env` file
-
-> https://*_discordapp_*.com/api/webhooks/`ID`/`TOKEN`
+### Where to find your discord webhook ID and TOKEN
+Steps to find this informations are described on the [wiki of the project](https://github.com/SlimIO/Discord-Bot/wiki/Getting-your-dsicord-webhook-infos)
 
 ### Run the project
-At the root of the project :
+
+To start the project write the following command line at the root of the project
 ```bash
 $ npm start
 ```
-
