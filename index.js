@@ -1,5 +1,5 @@
 const Discord = require("discord.js");
-const dotenv = require("dotenv");
+const dotenv = require("dotenv").config();
 const polka = require("polka");
 const bodyParser = require("body-parser");
 const templateMsg = require("./template/discordMessage.json");
@@ -9,8 +9,6 @@ const GK_ICON = "https://imgur.com/Rk6r0Oo";
 const GIT_ICON = "https://imgur.com/Q2belQu";
 const GIT_ICON_FOOTER = "https://imgur.com/kSGv3fz";
 const SECONDS = 10000;
-
-dotenv.config();
 
 const gitWebHook = new Discord.WebhookClient(process.env.WEBHOOK_ID, process.env.WEBHOOK_TOKEN);
 
@@ -32,9 +30,10 @@ function getEmbed(gitWebHookInfos, isNewContributor) {
     const isGreenkeeper = login === "greenkeeper[bot]";
     if (!isNewContributor && !isGreenkeeper) {
         const contributor = contributors.get(login);
-        const lastIndx = contributor.embeds.length - 1;
+        const lastIndx = contributor.embeds.size - 1;
         delete contributor.embeds[lastIndx].footer;
     }
+
     const embeds = isNewContributor ? { embeds: [] } : contributors.get(login);
     const obj = JSON.parse(JSON.stringify(templateMsg));
 
@@ -49,9 +48,10 @@ function getEmbed(gitWebHookInfos, isNewContributor) {
     };
 
     obj.color = isGreenkeeper ? 51061 : 16185594;
-    obj.author = author;
     obj.title = isGreenkeeper ? "Update " : `[${name}:${branch}] ${commits.length} commits`;
     obj.url = isGreenkeeper ? "" : compare;
+
+    obj.author = author;
     if (isGreenkeeper && isNewContributor) {
         obj.description = `**commit message** : ${commits[0].message}\n\n__Liste des package mis a jours__:\n${getGreenKeeperDesc(commits, name)}`;
     }
@@ -67,7 +67,7 @@ function getEmbed(gitWebHookInfos, isNewContributor) {
 }
 
 function writeOnDiscord() {
-    if (contributors.length === 0) {
+    if (contributors.size === 0) {
         setTimeout(writeOnDiscord, SECONDS);
         console.log("return");
 
