@@ -1,10 +1,14 @@
+// Require Third-party Dependencies
 const Discord = require("discord.js");
-const dotenv = require("dotenv").config();
 const polka = require("polka");
 const bodyParser = require("body-parser");
+require("dotenv").config();
+require("make-promises-safe");
+
+// Require Internal Dependencies
 const templateMsg = require("./template/discordMessage.json");
 
-// const GreenKeeper = require("./src/greenKeeper.class");
+// CONSTANTS
 const GK_ICON = "https://imgur.com/Rk6r0Oo";
 const GIT_ICON = "https://imgur.com/Q2belQu";
 const GIT_ICON_FOOTER = "https://imgur.com/kSGv3fz";
@@ -15,16 +19,47 @@ const gitWebHook = new Discord.WebhookClient(process.env.WEBHOOK_ID, process.env
 const contributors = new Map();
 const listRepoName = new Set();
 
+/**
+ * @function getDesc
+ * @param {!Array<Object>} commits An array send by git through his webhooks
+ *
+ * @returns {String} represents the concatenation of the message contained in each commit
+ *
+ */
 function getDesc(commits) {
     return commits
         .reduce((desc, currVal) => `${desc}[${currVal.id.substring(0, 7)}](${currVal.url}) ${currVal.message} \n`, []);
 }
 
+/**
+ * @function getGreenKeeperDesc
+ * @param {!Array<Object>} commits An array send by git through his webhooks
+ * @param {String} repoName name of the repository
+ *
+ * @returns {String} represents the concatenation of the message contained in each commit
+ *
+ */
 function getGreenKeeperDesc(commits, repoName) {
     return commits
         .reduce((desc, currVal) => `${desc}[${currVal.id.substring(0, 7)}](${currVal.url}) ${repoName} \n`, []);
 }
 
+
+/**
+ * @function getEmbed
+ * @param {!Object} gitWebHookInfos A git webhook destructured and lightened object
+ * @param {String} gitWebHookInfos.avatar_url An url of the logo of the git contributor
+ * @param {String} gitWebHookInfos.login Name of the git contributor
+ * @param {String} gitWebHookInfos.html_url Git URL of the contributor's profile
+ * @param {String} gitWebHookInfos.name Name of the git repository
+ * @param {String} gitWebHookInfos.Branch Name of the git branch
+ * @param {String} gitWebHookInfos.compare Git URL of the comparison page between two commits
+ * @param {Array<Object>} gitWebHookInfos.commits Array of commits
+ * @param {!Boolean} isNewContributor if the login of the git account appear for the first time : it will be a new contributor
+ *
+ * @returns {Object} Represents an object that allow to builds a message into discord
+ *
+ */
 function getEmbed(gitWebHookInfos, isNewContributor) {
     const { avatar_url, login, html_url, name, branch, compare, commits } = gitWebHookInfos;
     const isGreenkeeper = login === "greenkeeper[bot]";
@@ -66,10 +101,15 @@ function getEmbed(gitWebHookInfos, isNewContributor) {
     return embeds;
 }
 
+/**
+ * @function writeOnDiscord
+ * @desc At regular time interval, this function will write on discord all commits infos grouped by contributors to avoid flood
+ * @returns {null}
+ *
+ */
 function writeOnDiscord() {
     if (contributors.size === 0) {
         setTimeout(writeOnDiscord, SECONDS);
-        console.log("return");
 
         return;
     }
@@ -80,7 +120,6 @@ function writeOnDiscord() {
     listRepoName.clear();
     contributors.clear();
     setTimeout(writeOnDiscord, SECONDS);
-    console.log("end");
 }
 writeOnDiscord();
 

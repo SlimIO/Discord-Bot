@@ -21,6 +21,7 @@
         "body-parser": "^1.18.3",
         "discord.js": "^11.4.2",
         "dotenv": "^6.2.0",
+        "make-promises-safe": "^5.0.0",
         "polka": "^0.5.2"
     },
     "devDependencies": {
