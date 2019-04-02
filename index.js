@@ -1,9 +1,10 @@
 // Require Third-party Dependencies
+require("dotenv").config();
+require("make-promises-safe");
 const Discord = require("discord.js");
 const polka = require("polka");
 const bodyParser = require("body-parser");
-require("dotenv").config();
-require("make-promises-safe");
+const send = require("@polka/send");
 
 // Require Internal Dependencies
 const templateMsg = require("./template/discordMessage.json");
@@ -12,12 +13,17 @@ const templateMsg = require("./template/discordMessage.json");
 const GK_ICON = "https://imgur.com/Rk6r0Oo";
 const GIT_ICON = "https://imgur.com/Q2belQu";
 const GIT_ICON_FOOTER = "https://imgur.com/kSGv3fz";
-const SECONDS = 10000;
+const WRITE_TIME_MS = 10000;
 
-const gitWebHook = new Discord.WebhookClient(process.env.WEBHOOK_ID, process.env.WEBHOOK_TOKEN);
-
+// Globals
 const contributors = new Map();
 const listRepoName = new Set();
+
+// Discord Web hook
+const gitWebHook = new Discord.WebhookClient(
+    process.env.WEBHOOK_ID,
+    process.env.WEBHOOK_TOKEN
+);
 
 /**
  * @function getDesc
@@ -101,80 +107,85 @@ function getEmbed(gitWebHookInfos, isNewContributor) {
     return embeds;
 }
 
-/**
- * @function writeOnDiscord
- * @desc At regular time interval, this function will write on discord all commits infos grouped by contributors to avoid flood
- * @returns {null}
- *
- */
-function writeOnDiscord() {
+// At regular time interval, this function will write on discord all commits infos grouped by contributors to avoid flood
+setInterval(function writeOnDiscord() {
     if (contributors.size === 0) {
-        setTimeout(writeOnDiscord, SECONDS);
-
         return;
     }
 
-    for (const embed of contributors.values()) {
-        gitWebHook.send(embed);
+    try {
+        for (const embed of contributors.values()) {
+            gitWebHook.send(embed);
+        }
+        listRepoName.clear();
+        contributors.clear();
     }
-    listRepoName.clear();
-    contributors.clear();
-    setTimeout(writeOnDiscord, SECONDS);
+    catch (err) {
+        console.error(err);
+        console.log("Failed to write Discord embeds!");
+    }
+}, WRITE_TIME_MS);
+
+function isSkippable(body) {
+    if (Reflect.has(body, "zen")) {
+        return true;
+    }
+    if (Reflect.has(body, "action")) {
+        return true;
+    }
+
+    return false;
 }
-writeOnDiscord();
 
 const server = polka();
 server.use(bodyParser.urlencoded({ extended: false }));
 server.use(bodyParser.json());
 
 server.post("/gitWebHook", (req, res) => {
-    const {
-        sender: { avatar_url, login, html_url },
-        repository: { name }, ref, compare, commits
-    } = req.body;
-    const branch = ref.split("/").reverse()[0];
-    const gitWebHookInfos = {
-        avatar_url,
-        login,
-        html_url,
-        name,
-        branch,
-        compare,
-        commits
-    };
-    const isGreenkeeper = login === "greenkeeper[bot]";
-    let embeds = null;
-
-    if (contributors.has(login)) {
-        embeds = isGreenkeeper ? contributors.get(login) : getEmbed(gitWebHookInfos, false);
-        if (isGreenkeeper) {
-            embeds.embeds[0].description += getGreenKeeperDesc(commits, name);
+    try {
+        if (isSkippable(req.body)) {
+            return send(res, 200, "Action skipped!");
         }
-    }
-    else {
-        embeds = getEmbed(gitWebHookInfos, true);
-    }
 
-    if (isGreenkeeper) {
-        listRepoName.add(name);
-        const packageName = commits[0].message.split("update")[1].split("to")[0].trim();
-        const plurialRepoNAme = listRepoName.size <= 1 ? "repository" : "repositories";
-        embeds.embeds[0].title = `Update ${packageName} in ${listRepoName.size} ${plurialRepoNAme}`;
+        const {
+            sender: { avatar_url, login, html_url },
+            repository: { name }, ref, compare, commits
+        } = req.body;
+
+        const branch = ref.split("/").pop();
+        const gitWebHookInfos = {
+            avatar_url, login, html_url, name, branch, compare, commits
+        };
+        const isGreenkeeper = login === "greenkeeper[bot]";
+        let embeds = null;
+
+        if (contributors.has(login)) {
+            embeds = isGreenkeeper ? contributors.get(login) : getEmbed(gitWebHookInfos, false);
+            if (isGreenkeeper) {
+                embeds.embeds[0].description += getGreenKeeperDesc(commits, name);
+            }
+        }
+        else {
+            embeds = getEmbed(gitWebHookInfos, true);
+        }
+
+        if (isGreenkeeper) {
+            listRepoName.add(name);
+            const [, packageName] = /update\s(.*)\sto/.exec(commits[0].message);
+            const pluralName = listRepoName.size <= 1 ? "repository" : "repositories";
+            embeds.embeds[0].title = `Update ${packageName} in ${listRepoName.size} ${pluralName}`;
+        }
+        contributors.set(login, embeds);
+
+        return send(res, 200, "Everything is fine!");
     }
+    catch (err) {
+        console.error(err);
+        console.log(JSON.stringify(req.body, null, 4));
 
-    // const gkObject = new GreenKeeper(gitWebHookInfos);
-    // gkObject.getEmbed();
-
-    contributors.set(login, embeds);
-    console.log("Message enregistre");
+        return send(res, 500, err.message);
+    }
 });
 
-server.post("/greenKeeper", (req, res) => {
-    console.log("\n");
-    console.log(JSON.stringify(req.body));
-    console.log("\n");
-});
-
-server.listen(3000, () => {
-    console.log("Server Start in port 3000");
-});
+const port = process.env.HTTP_PORT || 3000;
+server.listen(port, () => console.log(`WEBHOOK HTTP Server listening on port => ${port}`));
