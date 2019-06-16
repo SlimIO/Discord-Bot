@@ -1,7 +1,9 @@
 # SlimIO Discord bot
+![version](https://img.shields.io/badge/dynamic/json.svg?url=https://raw.githubusercontent.com/SlimIO/Discord-Bot/master/package.json&query=$.version&label=Version)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/SlimIO/is/commit-activity)
 ![MIT](https://img.shields.io/github/license/mashape/apistatus.svg)
-![version](https://img.shields.io/badge/dynamic/json.svg?url=https://raw.githubusercontent.com/SlimIO/discordBot/master/package.json?token=AOgWw4S2rDbDPbFI8V3xdhLeYA0rGjSHks5cbZG3wA%3D%3D?query=$.version&label=Version)
+![dep](https://img.shields.io/david/SlimIO/Discord-Bot.svg)
+![size](https://img.shields.io/github/repo-size/SlimIO/Discord-Bot.svg)
 
 This project allow us to manage discord messages comming from external application to prevent spam (greenkeeper, snyk, trello, drive ...)
 
