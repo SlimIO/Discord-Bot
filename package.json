@@ -24,7 +24,9 @@
         "src",
         "template",
         "commitlint.config.js",
-        "jsdoc.json"
+        "jsdoc.json",
+        "CONTRIBUTING.md",
+        "test"
     ],
     "author": "SlimIO",
     "license": "MIT",
