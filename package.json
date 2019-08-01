@@ -15,6 +15,17 @@
         "SlimIO",
         "monitoring"
     ],
+    "files": [
+        "index.js",
+        "slimio.toml",
+        ".eslintignore",
+        ".editorconfig",
+        ".eslintrc",
+        "src",
+        "template",
+        "commitlint.config.js",
+        "jsdoc.json"
+    ],
     "author": "SlimIO",
     "license": "MIT",
     "dependencies": {
