@@ -17,16 +17,7 @@
     ],
     "files": [
         "index.js",
-        "slimio.toml",
-        ".eslintignore",
-        ".editorconfig",
-        ".eslintrc",
-        "src",
-        "template",
-        "commitlint.config.js",
-        "jsdoc.json",
-        "CONTRIBUTING.md",
-        "test"
+        "template"
     ],
     "author": "SlimIO",
     "license": "MIT",
